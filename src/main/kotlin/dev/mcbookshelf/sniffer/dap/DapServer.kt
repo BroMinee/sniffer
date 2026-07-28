@@ -257,11 +257,12 @@ class DapServer : IDebugProtocolServer {
         LOGGER.debug("Evaluate request received with arguments: {}", args)
 
         return CompletableFuture.supplyAsync {
-            val output = dispatch(EvaluateInput(args.expression)) as EvaluateOutput
+            val output = dispatch(EvaluateInput(args.expression, args.context)) as EvaluateOutput
 
             EvaluateResponse().apply {
                 result = output.result
                 variablesReference = output.variablesReference
+                type = output.type
             }
         }
     }

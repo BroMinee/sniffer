@@ -4,6 +4,7 @@ import dev.mcbookshelf.sniffer.state.EvaluationSession
 import dev.mcbookshelf.sniffer.state.NbtVariableBuilder
 import dev.mcbookshelf.sniffer.state.ScopeManager
 import dev.mcbookshelf.sniffer.state.VariableManager
+import dev.mcbookshelf.sniffer.commands.DebugData
 import dev.mcbookshelf.sniffer.dispatch.Context
 import dev.mcbookshelf.sniffer.dispatch.Handler
 import dev.mcbookshelf.sniffer.dispatch.Output
@@ -30,32 +31,47 @@ class EvaluateHandler(
     override val inputType = EvaluateInput::class
 
     override fun handle(input: EvaluateInput, ctx: Context): Output {
-        evaluationSession.clearPrevious(input.expression)
-
-        val parseResult = VariableManager.evaluate(input.expression)
-        val debugData = parseResult.getOrElse { ex ->
-            return EvaluateOutput(result = ex.message ?: "Expression is invalid", variablesReference = 0)
-        }
-
         val scope = scopeManager.currentScope.orElse(null)
-            ?: return EvaluateOutput(result = "Scope is null", variablesReference = 0)
+            ?: return EvaluateOutput(result = "No active debug scope")
 
         val source = scope.executor
         if (source !is CommandSourceStack) {
-            return EvaluateOutput(result = "Source is not a server command source", variablesReference = 0)
+            return EvaluateOutput(result = "Source is not a server command source")
         }
+
+        val parseResult = VariableManager.evaluate(input.expression)
+        return parseResult.fold(
+            onSuccess = { debugData -> evaluateExpression(input.expression, source, debugData) },
+            onFailure = { executeCommand(input.expression, source, ctx) }
+        )
+    }
+
+    private fun executeCommand(expression: String, source: CommandSourceStack, ctx: Context): EvaluateOutput {
+        return try {
+            val cmd = expression.trimStart('/')
+            var returnValue = 0
+            val trackedSource = source.withCallback { success, value -> returnValue = value }
+            ctx.server.commands.performPrefixedCommand(trackedSource, cmd)
+            EvaluateOutput(result = returnValue.toString(), type = "int")
+        } catch (e: Exception) {
+            EvaluateOutput(result = e.message ?: "Command execution error")
+        }
+    }
+
+    private fun evaluateExpression(expression: String, source: CommandSourceStack, debugData: DebugData): EvaluateOutput {
+        evaluationSession.clearPrevious(expression)
 
         return try {
             val value = debugData.get(source)
             if (value is CompoundTag) {
                 val node = NbtVariableBuilder.build("debug", value, isRoot = true, registry = scopeManager.registry)
-                evaluationSession.store(input.expression, node)
+                evaluationSession.store(expression, node)
                 EvaluateOutput(result = value.toString(), variablesReference = node.id)
             } else {
-                EvaluateOutput(result = value.toString(), variablesReference = 0)
+                EvaluateOutput(result = value.toString())
             }
         } catch (e: Exception) {
-            EvaluateOutput(result = e.message ?: "Evaluation error", variablesReference = 0)
+            EvaluateOutput(result = e.message ?: "Evaluation error")
         }
     }
 }
