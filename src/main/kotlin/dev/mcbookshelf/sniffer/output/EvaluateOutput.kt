@@ -11,4 +11,5 @@ import dev.mcbookshelf.sniffer.dispatch.Output
 data class EvaluateOutput(
     val result: String,
     val variablesReference: Int = 0,
+    val type: String? = null,
 ) : Output
