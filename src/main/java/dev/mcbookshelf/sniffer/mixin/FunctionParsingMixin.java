@@ -69,10 +69,13 @@ public interface FunctionParsingMixin {
             }
         }
 
-        // 3. Build the line-number mapping before calling vanilla
+        // 3. Save preprocessed lines
+        FunctionTextLoader.putPreprocessed(id, preprocessed);
+        
+        // 4. Build the line-number mapping before calling vanilla
         buildLineMapping(preprocessed, lineMapping);
 
-        // 4. Call vanilla parsing with preprocessed lines
+        // 5. Call vanilla parsing with preprocessed lines
         CommandFunction<T> result;
         try {
             result = original.call(id, dispatcher, source, preprocessed);
@@ -81,10 +84,10 @@ public interface FunctionParsingMixin {
             throw e;
         }
 
-        // 5. Post-process: set source info on each Unbound entry
+        // 6. Post-process: set source info on each Unbound entry
         setSourceInfo(result, id.toString(), lineMapping);
 
-        // 6. Store debug tags
+        // 7. Store debug tags
         if (!debugTags.isEmpty()) {
             CommandFunctionUniqueAccessors.of(result).setDebugTags(debugTags);
         }

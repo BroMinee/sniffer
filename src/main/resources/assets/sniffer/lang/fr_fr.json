@@ -54,6 +54,9 @@
   "sniffer.auth.accept": "Accepter",
   "sniffer.auth.reject": "Refuser (%s)",
   "sniffer.auth.timed_out": "La demande d'attachement du débogueur a expiré",
+  "sniffer.commands.sniffer.preprocess.header": "Lignes prétraitées pour %s",
+  "sniffer.commands.sniffer.preprocess.invalid_id": "Format de fonction invalide : %s",
+  "sniffer.commands.sniffer.preprocess.not_found": "Fonction introuvable : %s",
   "sniffer.name": "Sniffer",
   "sniffer.step": "Pas à pas détaillé"
 }
