@@ -10,6 +10,7 @@ import dev.mcbookshelf.sniffer.accessor.CommandFunctionUniqueAccessors
 import dev.mcbookshelf.sniffer.mixin.ServerFunctionLibraryAccessors
 import dev.mcbookshelf.sniffer.mixin.ServerFunctionManagerAccessors
 import dev.mcbookshelf.sniffer.watcher.WatcherManager
+import dev.mcbookshelf.sniffer.util.Extension.addSnifferPrefix
 import net.minecraft.commands.CommandSource
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
@@ -236,8 +237,9 @@ object WatchCommand {
                 try{
                     return@map CommandFunction.fromLines(identifier, dispatcher, CommandSourceStack, lines)
                 }catch (ex: Exception){
-                    //val text = Component.translatable("sniffer.commands.watcher.modify.failed", identifier.toString()).withColor(CommonColors.RED)
-                    //server.playerList.broadcastSystemMessage(text, false)
+                    val msg = ex.message ?: ex.javaClass.simpleName
+                    val text = addSnifferPrefix("Parse error in $identifier: $msg")
+                    server.playerList.broadcastSystemMessage(text, false)
                     LOGGER.error("Failed to modify function: $identifier", ex)
                     return@map null
                 }
@@ -279,7 +281,8 @@ object WatchCommand {
                 try{
                     return@map CommandFunction.fromLines(identifier, dispatcher, CommandSourceStack, lines)
                 }catch (ex: Exception){
-                    val text = Component.translatable("sniffer.commands.watcher.create.failed", identifier).withColor(CommonColors.RED)
+                    val msg = ex.message ?: ex.javaClass.simpleName
+                    val text = addSnifferPrefix("Parse error in $identifier: $msg")
                     server.playerList.broadcastSystemMessage(text, false)
                     LOGGER.error("Failed to create function: $identifier", ex)
                     return@map null

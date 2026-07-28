@@ -7,13 +7,19 @@ import dev.mcbookshelf.sniffer.accessor.CommandFunctionUniqueAccessors;
 import dev.mcbookshelf.sniffer.accessor.MacroFunctionUniqueAccessor;
 import dev.mcbookshelf.sniffer.accessor.UnboundUniqueAccessor;
 import dev.mcbookshelf.sniffer.state.FunctionTextLoader;
+import dev.mcbookshelf.sniffer.state.ServerReference;
+import dev.mcbookshelf.sniffer.util.Extension;
 import net.minecraft.commands.ExecutionCommandSource;
 import net.minecraft.commands.execution.UnboundEntryAction;
 import net.minecraft.commands.execution.tasks.BuildContexts;
 import net.minecraft.commands.functions.CommandFunction;
 import net.minecraft.commands.functions.MacroFunction;
 import net.minecraft.commands.functions.PlainTextFunction;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 
 import java.util.ArrayList;
@@ -67,7 +73,13 @@ public interface FunctionParsingMixin {
         buildLineMapping(preprocessed, lineMapping);
 
         // 4. Call vanilla parsing with preprocessed lines
-        CommandFunction<T> result = original.call(id, dispatcher, source, preprocessed);
+        CommandFunction<T> result;
+        try {
+            result = original.call(id, dispatcher, source, preprocessed);
+        } catch (Exception e) {
+            broadcastParseError(id, e);
+            throw e;
+        }
 
         // 5. Post-process: set source info on each Unbound entry
         setSourceInfo(result, id.toString(), lineMapping);
@@ -114,6 +126,21 @@ public interface FunctionParsingMixin {
             // $-prefixed = macro, non-$ = command — both produce entries
             mapping.add(i);
             i++;
+        }
+    }
+
+    private static void broadcastParseError(Identifier id, Exception e) {
+        try {
+            MinecraftServer server = ServerReference.get();
+            String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            Component text = Extension.addSnifferPrefix(
+                Component.literal("Parse error in ").withStyle(ChatFormatting.WHITE)
+                    .append(Component.literal(id.toString()).withStyle(style -> style.withBold(true)))
+                    .append(Component.literal(": " + message))
+            );
+            server.execute(() -> server.getPlayerList().broadcastSystemMessage(text, false));
+        } catch (Exception ignored) {
+            LoggerFactory.getLogger("sniffer").warn("Could not broadcast parse error for {}: {}", id, e.getMessage());
         }
     }
 
