@@ -392,11 +392,19 @@ class PlainData(private val value: Any): DebugData {
 }
 
 class EntityNameType: ArgumentType<EntityNameType.Companion.Name>{
+
     override fun parse(reader: StringReader): Name {
         reader.skipWhitespace()
         reader.expect("name")
         reader.skipWhitespace()
-        val name = MessageArgument.message().parse(reader)
+        // MessageArgument.message() is greedy and consumes everything including the closing ')'.
+        // Since the convention requires a space before ')', we read only up to ' )'.
+        val start = reader.cursor
+        while (reader.canRead() && !(reader.peek() == ' ' && reader.cursor + 1 < reader.totalLength && reader.string[reader.cursor + 1] == ')')) {
+            reader.skip()
+        }
+        val substring = reader.string.substring(start, reader.cursor)
+        val name = MessageArgument.message().parse(StringReader(substring))
         return Name(name)
     }
 
