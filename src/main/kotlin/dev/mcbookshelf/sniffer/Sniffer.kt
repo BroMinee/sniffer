@@ -91,7 +91,7 @@ class Sniffer : ModInitializer {
             SnifferDispatcher.init()
         }
 
-        ServerLifecycleEvents.START_DATA_PACK_RELOAD.register { _, _ -> FunctionPathRegistry.clear() }
+        ServerLifecycleEvents.START_DATA_PACK_RELOAD.register { _, _ -> FunctionPathRegistry.clear(); FunctionTextLoader.clear() }
 
         // Start WebSocket server for DAP communication using configured settings
         ServerLifecycleEvents.SERVER_STARTED.register { _ ->
@@ -168,5 +168,6 @@ class Sniffer : ModInitializer {
         JvmtimerCommand.onInitialize()
         WatchCommand.onInitialize()
         DebugModeCommand.onInitialize()
+        SnifferCommand.onInitialize()
     }
 }

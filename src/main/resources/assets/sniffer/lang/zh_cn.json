@@ -54,6 +54,9 @@
   "sniffer.auth.accept": "接受",
   "sniffer.auth.reject": "拒绝 (%s)",
   "sniffer.auth.timed_out": "调试器附加请求已超时",
+  "sniffer.commands.sniffer.preprocess.header": "TODO I am not chinese %s",
+  "sniffer.commands.sniffer.preprocess.invalid_id": "TODO I am not chinese %s",
+  "sniffer.commands.sniffer.preprocess.not_found": "TODO I am not chinese %s",
   "sniffer.name": "Sniffer",
   "sniffer.step": "步入"
 }

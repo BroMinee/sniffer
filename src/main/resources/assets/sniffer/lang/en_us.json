@@ -56,6 +56,9 @@
   "sniffer.auth.timed_out": "Debugger attach request timed out",
   "sniffer.commands.debugmode.disable": "Debug mode is now disabled",
   "sniffer.commands.debugmode.enable": "Debug mode is now enabled",
+  "sniffer.commands.sniffer.preprocess.header": "Preprocessed lines for %s",
+  "sniffer.commands.sniffer.preprocess.invalid_id": "Invalid function format: %s",
+  "sniffer.commands.sniffer.preprocess.not_found": "Function not found: %s",
   "sniffer.name": "Sniffer",
   "sniffer.step": "Step Into"
 }
