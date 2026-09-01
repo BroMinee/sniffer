@@ -11,7 +11,11 @@ import net.minecraft.nbt.CompoundTag
 /**
  * Evaluates a debug expression against the source a command would run as.
  *
- * A [CompoundTag] result is registered as a variable subtree, so the client can expand it afterwards.
+ * First tries to parse the expression as the Sniffer mini-language (`data`, `score`, `name`).
+ * If that fails, treats the expression as a raw Minecraft command and delegates to [runCommandHandler],
+ * returning the integer result value. This means both syntaxes work from any context (watch, repl).
+ *
+ * A [CompoundTag] result from the mini-language is registered as a variable subtree so the client can expand it.
  * The [EvaluationSession] remembers that subtree, and evaluating the same expression again drops it first.
  *
  * @author theogiraudet
@@ -19,6 +23,7 @@ import net.minecraft.nbt.CompoundTag
 class EvaluateHandler(
     private val scopeManager: ScopeManager,
     private val evaluationSession: EvaluationSession,
+    private val runCommandHandler: RunCommandHandler,
 ) : Handler<EvaluateInput> {
 
     override val inputType = EvaluateInput::class
@@ -27,12 +32,12 @@ class EvaluateHandler(
         evaluationSession.clearPrevious(input.expression)
 
         val parseResult = VariableManager.evaluate(input.expression)
-        val debugData = parseResult.getOrElse { ex ->
-            return EvaluateOutput(result = ex.message ?: "Expression is invalid", variablesReference = 0)
+        if (parseResult.isFailure) {
+            val cmdOutput = runCommandHandler.handle(RunCommandInput(input.expression), ctx) as RunCommandOutput
+            return EvaluateOutput(result = cmdOutput.result.toString(), variablesReference = 0)
         }
+        val debugData = parseResult.getOrThrow()
 
-        // The same source a command would run as, so an expression reads what a command would see, whether the
-        // debugger is stopped in a scope or only attached to a player.
         val source = scopeManager.commandSource(ctx.source)
 
         return try {

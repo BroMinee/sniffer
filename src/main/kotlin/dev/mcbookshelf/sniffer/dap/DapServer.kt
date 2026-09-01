@@ -305,47 +305,23 @@ class DapServer : IDebugProtocolServer, DapService {
     }
 
     /**
-     * Evaluates an expression, or runs a command when the console asks for one.
+     * Evaluates an expression or a raw Minecraft command.
+     *
+     * The distinction is handled by [EvaluateHandler]: the sniffer language is tried first,
+     * and anything that does not parse as such is forwarded to the command dispatcher.
+     * Both paths return a result value, so the context (watch, repl) does not change the behaviour.
      */
     override fun evaluate(args: EvaluateArguments): CompletableFuture<EvaluateResponse> {
         LOGGER.debug("Evaluate request received with arguments: {}", args)
 
         return onServerThread {
-            if (isConsoleCommand(args)) {
-                val output = dispatch(RunCommandInput(args.expression)) as RunCommandOutput
+            val output = dispatch(EvaluateInput(args.expression)) as EvaluateOutput
 
-                // A command answers with text, and 0 is how the protocol says there is nothing to expand.
-                EvaluateResponse().apply {
-                    result = render(output)
-                    variablesReference = 0
-                }
-            } else {
-                val output = dispatch(EvaluateInput(args.expression)) as EvaluateOutput
-
-                EvaluateResponse().apply {
-                    result = output.result
-                    variablesReference = output.variablesReference
-                }
+            EvaluateResponse().apply {
+                result = output.result
+                variablesReference = output.variablesReference
             }
         }
-    }
-
-    /**
-     * Whether the console is asking for a command rather than for a value.
-     *
-     * Everything typed in the console is a command, which is what a console attached to a game is for, unless
-     * it opens with the brace the expression language already wears in `#!log` and `#!assert`.
-     * A command always begins with a letter, so the opening brace alone separates them.
-     */
-    private fun isConsoleCommand(args: EvaluateArguments): Boolean =
-        args.context == REPL_CONTEXT && !args.expression.trimStart().startsWith("{")
-
-
-    /** What the console shows: whatever the command wrote back, or what it answered when it wrote nothing. */
-    private fun render(output: RunCommandOutput): String = when {
-        output.feedback.isNotEmpty() -> output.feedback.joinToString("\n")
-        output.success -> output.result.toString()
-        else -> "The command reported no success."
     }
 
     override fun completions(args: CompletionsArguments): CompletableFuture<CompletionsResponse> {

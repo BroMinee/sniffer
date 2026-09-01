@@ -138,10 +138,20 @@ object VariableManager {
      * `{ (name @s) == "steve" }` is the language as `#!log` and `#!assert` write it, operands in parentheses and
      * operators between them.
      * A bare `data storage pack:x a` is the shorthand the variable views send, an operand on its own.
+     *
+     * Returns [Result.failure] when the expression is not a recognized Sniffer expression,
+     * so the caller can fall back to treating it as a raw Minecraft command.
      */
     @JvmStatic
     fun evaluate(expression: String): Result<DebugData> {
-        val reader = StringReader(expression.trim())
+        val trimmed = expression.trim()
+        val reader = StringReader(trimmed)
+        if (!reader.test('{') &&
+            !trimmed.startsWith("data ") &&
+            !trimmed.startsWith("score ") &&
+            !trimmed.startsWith("name ")) {
+            return Result.failure(IllegalArgumentException("Not a Sniffer expression: $trimmed"))
+        }
         return runCatching {
             if (reader.test('{')) ExprArgumentType().parse(reader)
             else ExprArgumentType().parseArgumentWithoutBrackets(reader)

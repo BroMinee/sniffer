@@ -34,6 +34,7 @@ import dev.mcbookshelf.sniffer.features.trace.TraceHandler
 fun buildHandlers(): List<Handler<*>> {
     val scopeManager = ScopeManager.get()
     val evaluationSession = EvaluationSession(scopeManager.registry)
+    val runCommandHandler = RunCommandHandler(scopeManager)
 
     return listOf(
         StepOverHandler(),
@@ -52,8 +53,8 @@ fun buildHandlers(): List<Handler<*>> {
         GetScopesHandler(scopeManager),
         ClearScopesHandler(scopeManager),
         ResolveVariablesHandler(scopeManager),
-        EvaluateHandler(scopeManager, evaluationSession),
-        RunCommandHandler(scopeManager),
+        EvaluateHandler(scopeManager, evaluationSession, runCommandHandler),
+        runCommandHandler,
         CompleteCommandHandler(scopeManager),
         GetSourceHandler(),
         TraceHandler { DapClient.of(TraceClient::class.java) },
