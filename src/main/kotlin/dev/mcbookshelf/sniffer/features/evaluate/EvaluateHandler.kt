@@ -34,7 +34,7 @@ class EvaluateHandler(
         val parseResult = VariableManager.evaluate(input.expression)
         if (parseResult.isFailure) {
             val cmdOutput = runCommandHandler.handle(RunCommandInput(input.expression), ctx) as RunCommandOutput
-            return EvaluateOutput(result = cmdOutput.result.toString(), variablesReference = 0)
+            return EvaluateOutput(result = cmdOutput.result.toString(), variablesReference = 0, feedback = cmdOutput.feedback)
         }
         val debugData = parseResult.getOrThrow()
 

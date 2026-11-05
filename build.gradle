@@ -1,7 +1,7 @@
 plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
-	id "org.jetbrains.kotlin.jvm" version "2.4.10"
+	id "org.jetbrains.kotlin.jvm" version "2.4.20"
 	id "com.gradleup.shadow" version "9.2.2"
 }
 
@@ -47,6 +47,10 @@ loom {
 	}
 
 	runs {
+		client {
+			vmArg "-Xmx8G"
+			vmArg "-Xms8G"
+		}
 		gametest {
 			server()
 			configName = "Game Test"
@@ -91,10 +95,10 @@ dependencies {
 	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 
 	// Added Cloth Config and ModMenu
-	api("me.shedaniel.cloth:cloth-config-fabric:26.2.155") {
+	api("me.shedaniel.cloth:cloth-config-fabric:26.3.159") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-    implementation("com.terraformersmc:modmenu:20.0.1")
+    implementation("com.terraformersmc:modmenu:21.0.0")
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {

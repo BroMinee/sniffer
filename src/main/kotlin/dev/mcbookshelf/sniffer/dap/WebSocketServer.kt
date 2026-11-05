@@ -316,11 +316,14 @@ class WebSocketServer : Endpoint() {
      */
     class WebSocketConfigurator : ServerApplicationConfig {
         override fun getEndpointConfigs(endpointClasses: Set<Class<out Endpoint>>): Set<ServerEndpointConfig> {
-            val path = "/${DebuggerConfig.getInstance().path}"
-            val config = ServerEndpointConfig.Builder
-                .create(WebSocketServer::class.java, path)
+            val dapPath = "/${DebuggerConfig.getInstance().path}"
+            val dapConfig = ServerEndpointConfig.Builder
+                .create(WebSocketServer::class.java, dapPath)
                 .build()
-            return setOf(config)
+            val cliConfig = ServerEndpointConfig.Builder
+                .create(CliEndpoint::class.java, "/cli")
+                .build()
+            return setOf(dapConfig, cliConfig)
         }
 
         override fun getAnnotatedEndpointClasses(scanned: Set<Class<*>>): Set<Class<*>> = emptySet()

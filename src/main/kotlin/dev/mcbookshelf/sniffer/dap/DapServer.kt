@@ -309,13 +309,21 @@ class DapServer : IDebugProtocolServer, DapService {
      *
      * The distinction is handled by [EvaluateHandler]: the sniffer language is tried first,
      * and anything that does not parse as such is forwarded to the command dispatcher.
-     * Both paths return a result value, so the context (watch, repl) does not change the behaviour.
+     * Both paths return a result value.
+     *
+     * When the client is a debug console (`repl` context), the feedback the command wrote back is
+     * also forwarded as output events, so the console shows what the command answered.
+     * Watch expressions only receive the result value.
      */
     override fun evaluate(args: EvaluateArguments): CompletableFuture<EvaluateResponse> {
         LOGGER.debug("Evaluate request received with arguments: {}", args)
 
         return onServerThread {
             val output = dispatch(EvaluateInput(args.expression)) as EvaluateOutput
+
+            if (args.context == REPL_CONTEXT) {
+                output.feedback.forEach { sendOutput(it + "\n") }
+            }
 
             EvaluateResponse().apply {
                 result = output.result
