@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component
  */
 class JvmtimerCommandIntegrationGameTest {
 
-    @GameTest(environment = "sniffer_test:timer_measures")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_measures")
     fun aStartEndPairRecordsAMeasurement(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
 
@@ -36,7 +36,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_untouched")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_untouched")
     fun aTimerThatNeverRanReportsNothing(helper: GameTestHelper) {
         val session = DebugSession(helper)
 
@@ -48,7 +48,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_get_before_end")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_get_before_end")
     fun getOnARunningTimerReportsNotFinished(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
 
@@ -59,7 +59,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_mispaired_start")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_mispaired_start")
     fun aSecondStartWithoutAnEndDisablesTheTimer(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
         session.measure()
@@ -78,7 +78,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_unbalanced_end")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_unbalanced_end")
     fun endingATimerThatNeverStartedDisablesIt(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
 
@@ -94,7 +94,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_reset")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_reset")
     fun resetDropsTheMeasurementsAndLeavesTheTimerUsable(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
         session.measure()
@@ -111,7 +111,7 @@ class JvmtimerCommandIntegrationGameTest {
         helper.succeed()
     }
 
-    @GameTest(environment = "sniffer_test:timer_disable")
+    @GameTest(environment = "sniffer_test:jvmtimer/timer_disable")
     fun aDisabledTimerStopsRecording(helper: GameTestHelper) {
         val session = DebugSession(helper).withCleanTimer()
         session.measure()
