@@ -139,12 +139,33 @@ class JvmtimerProfileCommandIntegrationGameTest {
         helper.succeed()
     }
 
+    @GameTest(environment = "sniffer_test:jvmtimer_profile/directive_profile_start")
+    fun theProfileStartDirectiveRegistersTheNamespaceOnCall(helper: GameTestHelper) {
+        val session = DebugSession(helper)
+        ProfiledFunctions.unregister(NOT_PROFILED)
+        JvmtimerCommand.getTimer(NOT_PROFILED).reset()
+
+        assertFalse(ProfiledFunctions.isProfiled(NOT_PROFILED), "Should not be profiled before the directive runs")
+
+        // Contains #!jvmtimer profile start sniffer_test
+        session.run("function $DIRECTIVE_PROFILE_START")
+
+        session.run("function $NOT_PROFILED")
+        val report = session.runCapturing("jvmtimer get $NOT_PROFILED").joinToString("\n")
+        assertTrue(report.hasMeasurement(), "A function profiled via directive should record a timing, got: $report")
+
+        // Clean up
+        ProfiledFunctions.unregister(NOT_PROFILED)
+        helper.succeed()
+    }
+
     private fun String.hasMeasurement(): Boolean = MEASUREMENT in this
 
     private companion object {
         const val PROFILED_SIMPLE = "sniffer_test:jvmtimer/profiled_simple"
         const val NOT_PROFILED = "sniffer_test:jvmtimer/not_profiled"
         const val OTHER_SIMPLE = "other_test:simple"
+        const val DIRECTIVE_PROFILE_START = "sniffer_test:jvmtimer/directive_profile_start"
 
         /** Functions that have `#!jvmtimer profile file` and must be re-registered after a destructive test. */
         val DIRECTIVE_PROFILED = listOf(
