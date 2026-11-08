@@ -102,6 +102,22 @@ object JvmtimerCommand : SnifferCommand {
                         }
                     )
                 )
+                .then(literal<CommandSourceStack>("report")
+                    .then(argument("namespace", StringArgumentType.greedyString())
+                        .suggests(NamespaceOrAllSuggestionProvider)
+                        .executes {
+                            val namespace = StringArgumentType.getString(it, "namespace")
+                            val matched = resolveNamespace(it.source, namespace)
+                            if (matched.isEmpty()) {
+                                SnifferChat.fail(it.source, "sniffer.commands.jvmtimer.profile.not_found", namespace)
+                                return@executes 0
+                            }
+                            val matchedTimers = matched.map { id -> getTimer(id) }
+                            // Dispatch to the current strategy's report generator
+                            matchedTimers.first().strategy.generateReport(it.source, namespace, matchedTimers)
+                        }
+                    )
+                )
             ).then(literal<CommandSourceStack>("mode")
                 .then(literal<CommandSourceStack>("count")
                     .executes {
@@ -183,6 +199,7 @@ object JvmtimerCommand : SnifferCommand {
         fun pendingEvent(): TimerEvent?
         fun completedEvents(): List<TimerEvent>
         fun reset()
+        fun generateReport(source: CommandSourceStack, namespace: String, timers: List<JvmTimer>): Int
 
         // Stats for /jvmtimer get
         val count: Int
@@ -222,6 +239,11 @@ object JvmtimerCommand : SnifferCommand {
             isRunning = false
             count = 0; totalTime = 0L; minTime = Long.MAX_VALUE; maxTime = 0L
         }
+
+        override fun generateReport(source: CommandSourceStack, namespace: String, timers: List<JvmTimer>): Int {
+            // TODO: generate lightweight summary report from aggregate stats
+            return 0
+        }
     }
 
     /** Full strategy: stores every event for profile report generation. */
@@ -247,6 +269,11 @@ object JvmtimerCommand : SnifferCommand {
         override fun pendingEvent(): TimerEvent? = events.lastOrNull()?.takeIf { it.pending }
         override fun completedEvents(): List<TimerEvent> = events.filter { !it.pending }
         override fun reset() { events.clear() }
+
+        override fun generateReport(source: CommandSourceStack, namespace: String, timers: List<JvmTimer>): Int {
+            // TODO: generate Chrome DevTools Performance-compatible trace report (.json.gz)
+            return 0
+        }
     }
 
     class JvmTimer(val id: String) {
