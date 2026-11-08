@@ -15,6 +15,8 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import dev.mcbookshelf.sniffer.command.SnifferCommand
 import dev.mcbookshelf.sniffer.chat.SnifferChat
+import dev.mcbookshelf.sniffer.mixin.ServerFunctionLibraryAccessors
+import dev.mcbookshelf.sniffer.mixin.ServerFunctionManagerAccessors
 
 /**
  * The `/jvmtimer` command, which times datapack functions from the JVM side.
@@ -67,6 +69,40 @@ object JvmtimerCommand : SnifferCommand {
                         1
                     }
                 )
+            ).then(literal<CommandSourceStack>("profile")
+                .then(literal<CommandSourceStack>("start")
+                    .then(argument("namespace", StringArgumentType.greedyString())
+                        .suggests(NamespaceOrAllSuggestionProvider)
+                        .executes {
+                            val namespace = StringArgumentType.getString(it, "namespace")
+                            profileAction(it.source, namespace, "sniffer.commands.jvmtimer.profile.start") { id ->
+                                ProfiledFunctions.register(id)
+                            }
+                        }
+                    )
+                )
+                .then(literal<CommandSourceStack>("end")
+                    .then(argument("namespace", StringArgumentType.greedyString())
+                        .suggests(NamespaceOrAllSuggestionProvider)
+                        .executes {
+                            val namespace = StringArgumentType.getString(it, "namespace")
+                            profileAction(it.source, namespace, "sniffer.commands.jvmtimer.profile.end") { id ->
+                                ProfiledFunctions.unregister(id)
+                            }
+                        }
+                    )
+                )
+                .then(literal<CommandSourceStack>("reset")
+                    .then(argument("namespace", StringArgumentType.greedyString())
+                        .suggests(NamespaceOrAllSuggestionProvider)
+                        .executes {
+                            val namespace = StringArgumentType.getString(it, "namespace")
+                            profileAction(it.source, namespace, "sniffer.commands.jvmtimer.profile.reset") { id ->
+                                getTimer(id).reset()
+                            }
+                        }
+                    )
+                )
             ).then(literal<CommandSourceStack>("disable")
                 .then(argument("id", StringArgumentType.greedyString())
                     .suggests(JvmtimerSuggestionProvider)
@@ -78,6 +114,36 @@ object JvmtimerCommand : SnifferCommand {
                     }
                 )
             )
+
+    private fun profileAction(source: CommandSourceStack, namespace: String, key: String, action: (String) -> Unit): Int {
+        val matched = resolveNamespace(source, namespace)
+        if (matched.isEmpty()) {
+            SnifferChat.fail(source, "sniffer.commands.jvmtimer.profile.not_found", namespace)
+            return 0
+        }
+        matched.forEach(action)
+        replyWithFunctionList(source, key, matched, namespace)
+        return 1
+    }
+
+    private fun replyWithFunctionList(source: CommandSourceStack, key: String, functions: List<String>, namespace: String) {
+        val text = Component.empty()
+        text.appendLine(Component.translatable(key, functions.size.toString(), namespace))
+        functions.sorted().forEach { id ->
+            text.appendLine(Component.literal(" - $id"))
+        }
+        SnifferChat.reply(source, text)
+    }
+
+    private fun resolveNamespace(source: CommandSourceStack, namespace: String): List<String> {
+        val library = (source.server.functions as ServerFunctionManagerAccessors).library as ServerFunctionLibraryAccessors
+        val functions = library.functions
+        return if (namespace == "*") {
+            functions.keys.map { id -> id.toString() }
+        } else {
+            functions.keys.filter { id -> id.namespace == namespace }.map { id -> id.toString() }
+        }
+    }
 
     fun getTimer(id: String): JvmTimer{
         return timers[id] ?: JvmTimer(id).also { timers[id] = it }
