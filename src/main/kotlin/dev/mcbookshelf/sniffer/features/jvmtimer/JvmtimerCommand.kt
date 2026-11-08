@@ -25,6 +25,7 @@ import dev.mcbookshelf.sniffer.mixin.ServerFunctionManagerAccessors
 object JvmtimerCommand : SnifferCommand {
 
     val timers = HashMap<String, JvmTimer>()
+    private var fullMode = false
 
     override fun build(dispatcher: CommandDispatcher<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> =
         literal<CommandSourceStack>("jvmtimer")
@@ -101,6 +102,23 @@ object JvmtimerCommand : SnifferCommand {
                         }
                     )
                 )
+            ).then(literal<CommandSourceStack>("mode")
+                .then(literal<CommandSourceStack>("count")
+                    .executes {
+                        fullMode = false
+                        timers.values.forEach { t -> t.switchToCount() }
+                        SnifferChat.reply(it.source, "sniffer.commands.jvmtimer.mode", "count")
+                        1
+                    }
+                )
+                .then(literal<CommandSourceStack>("full")
+                    .executes {
+                        fullMode = true
+                        timers.values.forEach { t -> t.switchToProfile() }
+                        SnifferChat.reply(it.source, "sniffer.commands.jvmtimer.mode", "full")
+                        1
+                    }
+                )
             ).then(literal<CommandSourceStack>("disable")
                 .then(argument("id", StringArgumentType.greedyString())
                     .suggests(JvmtimerSuggestionProvider)
@@ -144,7 +162,10 @@ object JvmtimerCommand : SnifferCommand {
     }
 
     fun getTimer(id: String): JvmTimer {
-        return timers[id] ?: JvmTimer(id).also { timers[id] = it }
+        return timers[id] ?: JvmTimer(id).also {
+            if (fullMode) it.switchToProfile()
+            timers[id] = it
+        }
     }
 
     class TimerEvent(val id: String, val startNano: Long, var endNano: Long = -1L, val parent: TimerEvent? = null) {
