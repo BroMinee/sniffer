@@ -241,8 +241,7 @@ object JvmtimerCommand : SnifferCommand {
         }
 
         override fun generateReport(source: CommandSourceStack, namespace: String, timers: List<JvmTimer>): Int {
-            // TODO: generate lightweight summary report from aggregate stats
-            return 0
+            return CountReportGenerator.generate(source, namespace, timers)
         }
     }
 
