@@ -9,8 +9,6 @@ import net.minecraft.commands.Commands.argument
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.util.CommonColors
-import kotlin.math.max
-import kotlin.math.min
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import dev.mcbookshelf.sniffer.command.SnifferCommand
@@ -145,88 +143,155 @@ object JvmtimerCommand : SnifferCommand {
         }
     }
 
-    fun getTimer(id: String): JvmTimer{
+    fun getTimer(id: String): JvmTimer {
         return timers[id] ?: JvmTimer(id).also { timers[id] = it }
+    }
+
+    class TimerEvent(val id: String, val startNano: Long, var endNano: Long = -1L, val parent: TimerEvent? = null) {
+        val pending: Boolean get() = endNano == -1L
+        val duration: Long get() = endNano - startNano
+        /** Assigned by [ProfileReportGenerator] at report time. */
+        @JvmField var nodeId: Int = -1
+    }
+
+    /** Recording strategy — decides what data to keep at runtime. */
+    interface TimerStrategy {
+        val isRunning: Boolean
+        fun start(id: String, parent: TimerEvent?): Boolean
+        fun end(): Boolean
+        fun pendingEvent(): TimerEvent?
+        fun completedEvents(): List<TimerEvent>
+        fun reset()
+
+        // Stats for /jvmtimer get
+        val count: Int
+        val totalTime: Long
+        val minTime: Long
+        val maxTime: Long
+    }
+
+    /** Lightweight strategy: only tracks aggregate stats, zero per-event allocation. */
+    class CountStrategy : TimerStrategy {
+        override var isRunning = false; private set
+        override var count = 0; private set
+        override var totalTime = 0L; private set
+        override var minTime = Long.MAX_VALUE; private set
+        override var maxTime = 0L; private set
+        private var startNano = 0L
+
+        override fun start(id: String, parent: TimerEvent?): Boolean {
+            startNano = System.nanoTime()
+            isRunning = true
+            return true
+        }
+
+        override fun end(): Boolean {
+            val dur = System.nanoTime() - startNano
+            isRunning = false
+            count++
+            totalTime += dur
+            if (dur < minTime) minTime = dur
+            if (dur > maxTime) maxTime = dur
+            return true
+        }
+
+        override fun pendingEvent(): TimerEvent? = null
+        override fun completedEvents(): List<TimerEvent> = emptyList()
+        override fun reset() {
+            isRunning = false
+            count = 0; totalTime = 0L; minTime = Long.MAX_VALUE; maxTime = 0L
+        }
+    }
+
+    /** Full strategy: stores every event for profile report generation. */
+    class ProfileStrategy : TimerStrategy {
+        private val events = mutableListOf<TimerEvent>()
+
+        override val isRunning: Boolean get() = events.lastOrNull()?.pending == true
+        override val count: Int get() = events.count { !it.pending }
+        override val totalTime: Long get() = events.filter { !it.pending }.sumOf { it.duration }
+        override val minTime: Long get() = events.filter { !it.pending }.minOfOrNull { it.duration } ?: 0L
+        override val maxTime: Long get() = events.filter { !it.pending }.maxOfOrNull { it.duration } ?: 0L
+
+        override fun start(id: String, parent: TimerEvent?): Boolean {
+            events.add(TimerEvent(id, System.nanoTime(), parent = parent))
+            return true
+        }
+
+        override fun end(): Boolean {
+            events.last().endNano = System.nanoTime()
+            return true
+        }
+
+        override fun pendingEvent(): TimerEvent? = events.lastOrNull()?.takeIf { it.pending }
+        override fun completedEvents(): List<TimerEvent> = events.filter { !it.pending }
+        override fun reset() { events.clear() }
     }
 
     class JvmTimer(val id: String) {
 
-        private var startTime = -1L
-
-        private var totalTime = 0L
-
-        private var count = 0
-
         private var enabled = true
+        var strategy: TimerStrategy = CountStrategy(); private set
 
-        private var minTime = Long.MAX_VALUE
+        fun switchToProfile() { strategy = ProfileStrategy() }
+        fun switchToCount() { strategy = CountStrategy() }
 
-        private var maxTime = Long.MIN_VALUE
+        fun completedEvents(): List<TimerEvent> = strategy.completedEvents()
+        fun pendingEvent(): TimerEvent? = strategy.pendingEvent()
 
-        fun start(source: CommandSourceStack): Boolean {
-            if(!enabled){
+        fun start(source: CommandSourceStack, parent: TimerEvent? = null): Boolean {
+            if (!enabled) {
                 SnifferChat.fail(source, "sniffer.commands.jvmtimer.disable", id)
                 return false
             }
-            if((startTime != -1L)){
+            if (strategy.isRunning) {
                 SnifferChat.fail(source, "sniffer.commands.jvmtimer.already_started", id)
                 enabled = false
-                startTime = -1L
                 return false
             }
-            startTime = System.nanoTime()
-            return true
+            return strategy.start(id, parent)
         }
 
         fun end(source: CommandSourceStack): Boolean {
-            if(!enabled){
+            if (!enabled) {
                 SnifferChat.fail(source, "sniffer.commands.jvmtimer.disable", id)
                 return false
             }
-            if((startTime == -1L)){
+            if (!strategy.isRunning) {
                 SnifferChat.fail(source, "sniffer.commands.jvmtimer.not_running", id)
                 enabled = false
                 return false
             }
-            val delta = System.nanoTime() - startTime
-            totalTime += delta
-            minTime = min(minTime, delta)
-            maxTime = max(maxTime, delta)
-            count++
-            startTime = -1L
-            return true
+            return strategy.end()
         }
 
-        fun get(ctx: CommandContext<CommandSourceStack>){
-            if(count == 0){
-                if(startTime != -1L)
+        fun get(ctx: CommandContext<CommandSourceStack>) {
+            if (!enabled) {
+                SnifferChat.reply(ctx.source, "sniffer.commands.jvmtimer.disable", id)
+                return
+            }
+            if (strategy.count == 0) {
+                if (strategy.isRunning)
                     SnifferChat.reply(ctx.source, "sniffer.commands.jvmtimer.not_finished", id)
                 else
                     SnifferChat.reply(ctx.source, "sniffer.commands.jvmtimer.not_started", id)
                 return
             }
-            if(!enabled){
-                SnifferChat.reply(ctx.source, "sniffer.commands.jvmtimer.disable", id)
-                return
-            }
             val text = Component.empty()
             text.title("sniffer.commands.jvmtimer.info.id").value(id)
-                .desc("sniffer.commands.jvmtimer.info.total").value("${totalTime / 1_000_000.0}ms")
-                .desc("sniffer.commands.jvmtimer.info.count").value(count.toString())
-                .desc("sniffer.commands.jvmtimer.info.average").value("${totalTime / count / 1_000_000.0}ms")
-                .desc("sniffer.commands.jvmtimer.info.min_max").value("${minTime / 1_000.0}μs/${maxTime / 1_000.0}μs")
+                .desc("sniffer.commands.jvmtimer.info.total").value("${strategy.totalTime / 1_000_000.0}ms")
+                .desc("sniffer.commands.jvmtimer.info.count").value(strategy.count.toString())
+                .desc("sniffer.commands.jvmtimer.info.average").value("${strategy.totalTime / strategy.count / 1_000_000.0}ms")
+                .desc("sniffer.commands.jvmtimer.info.min_max").value("${strategy.minTime / 1_000.0}us/${strategy.maxTime / 1_000.0}us")
             SnifferChat.reply(ctx.source, text)
         }
-        fun reset(){
-            startTime = -1L
-            totalTime = 0L
-            count = 0
+
+        fun reset() {
+            strategy.reset()
             enabled = true
-            maxTime = Long.MIN_VALUE
-            minTime = Long.MAX_VALUE
         }
 
-        fun disable(){
+        fun disable() {
             reset()
             enabled = false
         }

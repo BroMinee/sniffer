@@ -71,7 +71,7 @@ public class CallFunctionMixin<T extends ExecutionCommandSource<T>> {
         // and runs after any sub-function called by "return run function".
         if (ProfiledFunctions.isProfiled(functionId) && sender instanceof CommandSourceStack css) {
             var timer = JvmtimerCommand.INSTANCE.getTimer(functionId);
-            timer.start(css);
+            timer.start(css, null);
             context.queueNext(new CommandQueueEntry<>(frame, (s, c) -> timer.end(css)));
         }
     }
