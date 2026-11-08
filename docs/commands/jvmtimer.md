@@ -88,6 +88,29 @@ Then use `/jvmtimer get my_pack:dir/my_function` to see the results.
 
 ---
 
+### Profile start (directive)
+
+```{describe} #!jvmtimer profile start <namespace>
+
+A directive placed in a `.mcfunction` file. When the function is called, every loaded function in the given namespace is registered for automatic profiling, as if `/jvmtimer profile start <namespace>` had been run.
+
+:Arguments:
+  **`namespace`**: The namespace to profile.
+
+:Note:
+  This is useful to enable profiling from within a datapack, for example in a `load.mcfunction`, without needing to type the command manually.
+  The `*` wildcard is also supported.
+```
+
+*Example: an init function that enables profiling for its own namespace:*
+
+```mcfunction
+#!jvmtimer profile start my_pack
+say Profiling enabled for my_pack
+```
+
+---
+
 ### Get
 
 ```{describe} /jvmtimer get <id>
@@ -132,4 +155,55 @@ Use it to silence a timer whose directives are still in the datapack, without ed
 
 :Arguments:
   **`id`**: Name of the timer.
+```
+
+---
+
+## Profile namespace
+
+Bulk profiling: register or unregister every function in a namespace (or all namespaces) at once, without adding `#!jvmtimer profile file` to each file.
+
+---
+
+### Profile start
+
+```{describe} /jvmtimer profile start <namespace|*>
+
+Register every loaded function in the given namespace for automatic profiling. Use `*` to register all namespaces.
+
+Functions already registered (e.g. via the directive) are not duplicated.
+
+:Arguments:
+  **`namespace`**: The namespace to profile, or `*` for all.
+
+:Note:
+  If the namespace does not match any loaded function, an error is shown in chat.
+  Autocomplete suggests the available namespaces and `*`.
+```
+
+---
+
+### Profile end
+
+```{describe} /jvmtimer profile end <namespace|*>
+
+Unregister every function in the given namespace from automatic profiling. Use `*` to unregister all namespaces.
+
+This also overrides functions registered via the `#!jvmtimer profile file` directive.
+Accumulated timer data is preserved, use `profile reset` or `reset` to clear it.
+
+:Arguments:
+  **`namespace`**: The namespace to stop profiling, or `*` for all.
+```
+
+---
+
+### Profile reset
+
+```{describe} /jvmtimer profile reset <namespace|*>
+
+Reset the timer of every function in the given namespace (clear total, count, min, max), but keep the functions registered for profiling.
+
+:Arguments:
+  **`namespace`**: The namespace whose timers to reset, or `*` for all.
 ```
