@@ -205,6 +205,24 @@ export class ProfilerPanel {
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   td.fn { word-break: break-all; }
   tr:hover td { background: var(--vscode-list-hoverBackground); }
+  .toggle-group { display: flex; gap: 0; }
+  .toggle-group button {
+    border-radius: 0; border: 1px solid var(--vscode-panel-border);
+    padding: 3px 10px; font-size: 12px; cursor: pointer;
+    background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);
+  }
+  .toggle-group button:first-child { border-radius: 2px 0 0 2px; }
+  .toggle-group button:last-child { border-radius: 0 2px 2px 0; border-left: none; }
+  .toggle-group button.active {
+    background: var(--vscode-button-background); color: var(--vscode-button-foreground);
+  }
+  .tree-toggle {
+    display: inline-block; width: 16px; text-align: center;
+    cursor: pointer; user-select: none; opacity: 0.7; font-size: 11px;
+  }
+  .tree-toggle:hover { opacity: 1; }
+  .tree-toggle.leaf { visibility: hidden; }
+  tr.tree-group > td.fn { font-weight: bold; }
   .bar-cell { position: relative; }
   .bar-bg {
     position: absolute; top: 2px; bottom: 2px; left: 0; right: 0;
@@ -220,6 +238,10 @@ export class ProfilerPanel {
 <header>
   <span id="title">Profiler</span>
   <span id="last-refresh"></span>
+  <div class="toggle-group">
+    <button id="mode-flat" class="active">Flat</button>
+    <button id="mode-tree">Tree</button>
+  </div>
   <div id="spinner" class="spinner"></div>
   <button id="refresh">Refresh</button>
 </header>
