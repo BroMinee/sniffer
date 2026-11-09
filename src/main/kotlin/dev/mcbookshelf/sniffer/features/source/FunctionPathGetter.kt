@@ -9,6 +9,9 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.PathPackResources
 import net.minecraft.server.packs.resources.Resource
 import net.minecraft.server.packs.resources.ResourceManager
+import dev.mcbookshelf.sniffer.dap.DapClient
+import dev.mcbookshelf.sniffer.features.jvmtimer.ProfilerClient
+import dev.mcbookshelf.sniffer.features.jvmtimer.TimerListArguments
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
@@ -43,6 +46,10 @@ class FunctionPathGetter : SimpleSynchronousResourceReloadListener {
         }
 
         LOGGER.debug("Resolved {} function paths for debugging", functions.size)
+
+        DapClient.of(ProfilerClient::class.java)?.timerList(
+            TimerListArguments(FunctionPathRegistry.namespaces())
+        )
     }
 
     private fun resolveAndSavePath(id: Identifier, resource: Resource) {
