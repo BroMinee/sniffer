@@ -28,18 +28,19 @@
   "scripts": {
     "compile": "tsc -p ./",
     "lint": "eslint src --ext ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p src/trace/webview/tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p src/trace/webview/tsconfig.json --noEmit && tsc -p src/profiler/webview/tsconfig.json --noEmit",
     "esbuild-base": "esbuild ./src/extension.ts --bundle --tsconfig=./tsconfig.json --external:vscode --format=cjs --platform=node --outfile=dist/extension.js",
     "watch": "npm run -S esbuild-base -- --sourcemap --sources-content=false --watch",
     "esbuild-web": "esbuild ./src/web-extension.ts --bundle --tsconfig=./tsconfig.json --external:vscode --format=cjs --platform=browser --outfile=dist/web-extension.js",
     "esbuild-view": "esbuild ./src/trace/webview/trace.ts --bundle --tsconfig=./src/trace/webview/tsconfig.json --format=iife --platform=browser --outfile=dist/trace.js",
+    "esbuild-profiler-view": "esbuild ./src/profiler/webview/profiler.ts --bundle --tsconfig=./src/profiler/webview/tsconfig.json --format=iife --platform=browser --outfile=dist/profiler.js",
     "watch-web": "npm run -S esbuild-web -- --sourcemap --sources-content=false --watch",
-    "build": "npm run -S esbuild-base -- --sourcemap --sources-content=false && npm run -S esbuild-web -- --sourcemap --sources-content=false && npm run -S esbuild-view -- --sourcemap --sources-content=false",
+    "build": "npm run -S esbuild-base -- --sourcemap --sources-content=false && npm run -S esbuild-web -- --sourcemap --sources-content=false && npm run -S esbuild-view -- --sourcemap --sources-content=false && npm run -S esbuild-profiler-view -- --sourcemap --sources-content=false",
     "sync-version": "node -e \"const fs=require('fs'),v=/^mod_version=(.+)$/m.exec(fs.readFileSync('../gradle.properties','utf8'))[1].trim(),p='package.json';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/^  \\\"version\\\": \\\".*\\\",$/m,'  \\\"version\\\": \\\"'+v+'\\\",'))\"",
     "package": "vsce package",
     "publish": "vsce publish",
     "publish-pre-release": "vsce publish --pre-release",
-    "vscode:prepublish": "npm run sync-version && rimraf dist && npm run -S esbuild-base -- --minify && npm run -S esbuild-web -- --minify && npm run -S esbuild-view -- --minify",
+    "vscode:prepublish": "npm run sync-version && rimraf dist && npm run -S esbuild-base -- --minify && npm run -S esbuild-web -- --minify && npm run -S esbuild-view -- --minify && npm run -S esbuild-profiler-view -- --minify",
     "test": "npm run typecheck && npm run -S test-graph",
     "test-graph": "esbuild ./test/traceGraph.test.ts --bundle --tsconfig=./tsconfig.json --format=cjs --platform=node --outfile=dist/traceGraph.test.cjs && node dist/traceGraph.test.cjs"
   },
@@ -74,16 +75,46 @@
   "activationEvents": [
     "onDebug",
     "onCommand:sniffer.configureLaunch",
+    "onView:sniffer.profiler",
     "workspaceContains:**/pack.mcmeta"
   ],
   "workspaceTrust": {
     "request": "never"
   },
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sniffer",
+          "title": "Sniffer",
+          "icon": "images/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "sniffer": [
+        {
+          "id": "sniffer.profiler",
+          "name": "Profiler",
+          "when": "sniffer.connected"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "sniffer.profiler",
+        "contents": "Connect to Minecraft to see available namespaces.\n[Generate Report](command:sniffer.profilerReport)"
+      }
+    ],
     "commands": [
       {
         "command": "sniffer.configureLaunch",
         "title": "Configure Debug Configuration",
+        "category": "Sniffer"
+      },
+      {
+        "command": "sniffer.profilerReport",
+        "title": "Profiler Report",
         "category": "Sniffer"
       }
     ],
