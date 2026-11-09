@@ -26,6 +26,7 @@
 	},
 	"exclude": [
 		"node_modules",
-		"src/trace/webview"
+		"src/trace/webview",
+		"src/profiler/webview"
 	]
 }
