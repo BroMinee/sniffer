@@ -24,6 +24,8 @@
   "sniffer.commands.jvmtimer.profile.end": "TODO",
   "sniffer.commands.jvmtimer.profile.reset": "TODO",
   "sniffer.commands.jvmtimer.profile.not_found": "TODO",
+  "sniffer.commands.jvmtimer.profile.report.saved": "TODO",
+  "sniffer.commands.jvmtimer.profile.report.empty": "TODO",
   "sniffer.commands.jvmtimer.not_finished": "TODO",
   "sniffer.commands.jvmtimer.not_running": "TODO",
   "sniffer.commands.jvmtimer.not_started": "计时器 %s 未开始",

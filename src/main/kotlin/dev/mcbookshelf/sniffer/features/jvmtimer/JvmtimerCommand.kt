@@ -103,6 +103,23 @@ object JvmtimerCommand : SnifferCommand {
                         }
                     )
                 )
+                .then(literal<CommandSourceStack>("report")
+                    .then(argument("namespace", StringArgumentType.greedyString())
+                        .suggests(NamespaceOrAllSuggestionProvider)
+                        .executes {
+                            val namespace = StringArgumentType.getString(it, "namespace")
+                            val matched = resolveNamespace(it.source, namespace)
+                            if (matched.isEmpty()) {
+                                SnifferChat.fail(it.source, "sniffer.commands.jvmtimer.profile.not_found", namespace)
+                                return@executes 0
+                            }
+                            val matchedTimers = matched.map { id -> getTimer(id) }
+                            val result = AggregatedReportGenerator.generate(it.source, namespace, matchedTimers)
+                            if (result > 0) matchedTimers.forEach { timer -> timer.reset() }
+                            result
+                        }
+                    )
+                )
             ).then(literal<CommandSourceStack>("disable")
                 .then(argument("id", StringArgumentType.greedyString())
                     .suggests(JvmtimerSuggestionProvider)
@@ -153,15 +170,15 @@ object JvmtimerCommand : SnifferCommand {
 
         private var startTime = -1L
 
-        private var totalTime = 0L
+        internal var totalTime = 0L; private set
 
-        private var count = 0
+        internal var count = 0; private set
 
         private var enabled = true
 
-        private var minTime = Long.MAX_VALUE
+        internal var minTime = Long.MAX_VALUE; private set
 
-        private var maxTime = Long.MIN_VALUE
+        internal var maxTime = Long.MIN_VALUE; private set
 
         fun start(source: CommandSourceStack): Boolean {
             if(!enabled){

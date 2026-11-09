@@ -26,6 +26,8 @@
   "sniffer.commands.jvmtimer.profile.end": "Stopped profiling %1$s functions in namespace '%2$s'",
   "sniffer.commands.jvmtimer.profile.reset": "Reset %1$s timers in namespace '%2$s'",
   "sniffer.commands.jvmtimer.profile.not_found": "No functions found in namespace '%1$s'",
+  "sniffer.commands.jvmtimer.profile.report.saved": "Report saved: %1$s events written to %2$s",
+  "sniffer.commands.jvmtimer.profile.report.empty": "No recorded events found in namespace '%1$s'",
   "sniffer.commands.jvmtimer.not_finished": "Timer %s is running but has not completed a cycle yet. Call end first.",
   "sniffer.commands.jvmtimer.not_running": "Timer %1$s is not started! Timer has been disabled. Use /jvmtimer reset %1$s to re-enable it.",
   "sniffer.commands.jvmtimer.not_started": "Timer %s hasn't started",
