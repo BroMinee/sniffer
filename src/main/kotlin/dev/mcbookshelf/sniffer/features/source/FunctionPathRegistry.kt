@@ -25,6 +25,9 @@ object FunctionPathRegistry {
     /** Pairs [mcpath] with the file it was loaded from, so the two never travel apart. */
     fun identify(mcpath: String): FunctionIdentity = FunctionIdentity(mcpath, paths[mcpath])
 
+    fun namespaces(): List<String> =
+        paths.keys.map { it.substringBefore(':') }.distinct().sorted()
+
     fun clear() {
         paths.clear()
     }

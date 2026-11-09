@@ -1,5 +1,6 @@
 package dev.mcbookshelf.sniffer.dap
 
+import dev.mcbookshelf.sniffer.features.jvmtimer.ProfilerClient
 import dev.mcbookshelf.sniffer.features.trace.TraceClient
 
 /**
@@ -13,6 +14,7 @@ object DapEndpointsRegistry {
     fun buildRemoteInterfaces(): List<Class<out DapRemote>> = listOf(
         StandardDapClient::class.java,
         TraceClient::class.java,
+        ProfilerClient::class.java,
     )
 
     /** The services Sniffer implements and the editor calls. */

@@ -12,6 +12,9 @@ import dev.mcbookshelf.sniffer.features.callstack.GetStackTraceInput
 import dev.mcbookshelf.sniffer.features.callstack.ScopesOutput
 import dev.mcbookshelf.sniffer.features.callstack.StackTraceOutput
 import dev.mcbookshelf.sniffer.features.evaluate.*
+import dev.mcbookshelf.sniffer.features.jvmtimer.ProfilerClient
+import dev.mcbookshelf.sniffer.features.jvmtimer.TimerListArguments
+import dev.mcbookshelf.sniffer.features.source.FunctionPathRegistry
 import dev.mcbookshelf.sniffer.features.source.GetSourceInput
 import dev.mcbookshelf.sniffer.features.source.Line
 import dev.mcbookshelf.sniffer.features.source.SourceFactory
@@ -92,6 +95,9 @@ class DapServer : IDebugProtocolServer, DapService {
             LOGGER.debug("Sending initialized event")
             if (client != null) {
                 client!!.initialized()
+                DapClient.of(ProfilerClient::class.java)?.timerList(
+                    TimerListArguments(FunctionPathRegistry.namespaces())
+                )
             } else {
                 LOGGER.warn("Client is null during initialize, couldn't send initialized event")
             }
