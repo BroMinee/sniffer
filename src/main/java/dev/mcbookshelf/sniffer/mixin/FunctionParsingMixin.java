@@ -46,8 +46,8 @@ public interface FunctionParsingMixin {
 
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).trim();
-            if (line.startsWith("#!")) {
-                String debugCmd = line.substring(2).stripLeading();
+            if (line.startsWith("##!") || line.startsWith("#!")) {
+                String debugCmd = line.substring(line.startsWith("##!") ? 3 : 2).stripLeading();
                 if (debugCmd.equals("jvmtimer profile file")) {
                     profiled = true;
                     preprocessed.add("# jvmtimer profile file"); // Keep the same number of lines
