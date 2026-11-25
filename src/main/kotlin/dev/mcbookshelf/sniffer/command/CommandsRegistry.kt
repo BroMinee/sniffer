@@ -2,6 +2,7 @@ package dev.mcbookshelf.sniffer.command
 
 import dev.mcbookshelf.sniffer.features.assertion.AssertCommand
 import dev.mcbookshelf.sniffer.features.breakpoints.BreakPointCommand
+import dev.mcbookshelf.sniffer.features.computejava.ComputeJavaCommand
 import dev.mcbookshelf.sniffer.features.debugmode.DebugModeCommand
 import dev.mcbookshelf.sniffer.features.jvmtimer.JvmtimerCommand
 import dev.mcbookshelf.sniffer.features.log.LogCommand
@@ -26,6 +27,7 @@ object CommandsRegistry {
         WatchCommand,
         DebugModeCommand,
         TraceCommand,
+        ComputeJavaCommand,
     )
 
     /**
